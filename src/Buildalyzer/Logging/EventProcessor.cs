@@ -1,7 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using Microsoft.Build.Framework;
 using Microsoft.Extensions.Logging;
 
@@ -97,11 +97,30 @@ namespace Buildalyzer.Logging
                         Items = e.Items
                     };
 
-                // Get the TFM for this project
-                string tfm = propertiesAndItems
+                var properties = propertiesAndItems
                     ?.Properties
-                    ?.ToDictionaryEntries()
-                    .FirstOrDefault(x => string.Equals(x.Key.ToString(), "TargetFrameworkMoniker", StringComparison.OrdinalIgnoreCase))
+                    ?.ToDictionaryEntries();
+                if (properties != null)
+                {
+                    StringBuilder targets = new StringBuilder();
+                    foreach (var prop in properties)
+                    {
+                        string key = (string)prop.Key;
+                        if (key.StartsWith("TargetF", StringComparison.OrdinalIgnoreCase))
+                        {
+                            targets.Append(key);
+                            targets.Append(",");
+                            targets.Append(prop.Value);
+                            targets.Append(",");
+                        }
+                    }
+                }
+
+                // Get the TFM for this project
+                string tfm = properties?
+                    .FirstOrDefault(x => string.Equals(x.Key.ToString(), "TargetFrameworkMoniker", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(x.Key.ToString(), "TargetFrameworkVersion", StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(x.Key.ToString(), "TargetFramework", StringComparison.OrdinalIgnoreCase))
                     .Value
                     ?.ToString();
                 if (!string.IsNullOrWhiteSpace(tfm))
